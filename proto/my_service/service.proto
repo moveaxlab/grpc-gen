@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package my_service;
+
+import "google/protobuf/empty.proto";
+
+message InputMessage {
+    string value = 1;
+}
+
+message OutputMessage {
+    string value = 1;
+}
+
+service Service1 {
+    rpc NoInputNoOutput (google.protobuf.Empty) returns (google.protobuf.Empty);
+    rpc InputNoOutput(InputMessage) returns (google.protobuf.Empty);
+    rpc NoInputWithOUtput(google.protobuf.Empty) returns (OutputMessage);
+    rpc InputAndOutput(InputMessage) returns (OutputMessage);
+    rpc InputStream(stream InputMessage) returns (OutputMessage);
+    rpc OutputStream(InputMessage) returns (stream OutputMessage);
+    rpc BidiStream(stream InputMessage) returns (stream OutputMessage);
+}

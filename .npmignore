@@ -1,0 +1,11 @@
+proto/
+src/
+
+.gitignore
+.mise.toml
+.prettierignore
+.prettierrc
+tsconfig.json
+yarn.lock
+
+*.tgz

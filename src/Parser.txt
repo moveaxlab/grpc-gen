@@ -1,0 +1,101 @@
+import { join } from 'path';
+import { readdirSync } from 'fs';
+import protobuf from 'protobufjs';
+import { loadProtosWithOptionsSync } from '@grpc/proto-loader/build/src/util';
+import { Options } from '@grpc/proto-loader';
+import Long from 'long';
+
+const conversionOptions: protobuf.IConversionOptions = {
+  longs: Long,
+  defaults: true,
+  arrays: true,
+  objects: true,
+};
+
+const protoLoaderOptions: Options = {
+  ...conversionOptions,
+  keepCase: true,
+};
+
+type Packages = keyof models;
+
+type PackageTypes<P extends Packages> = keyof models[P];
+
+type OutputType<P extends Packages, T extends PackageTypes<P>> = models[P][T];
+
+type InputType<P extends Packages, T extends PackageTypes<P>> = T extends string
+  ? `${T}__input` extends PackageTypes<P>
+    ? models[P][`${T}__input`]
+    : never
+  : never;
+
+let modelsFolder = '';
+
+let includeDirs: string[] = [];
+
+export function setModelsFolder(value: string) {
+    modelsFolder = value;
+    includeDirs.push(value);
+}
+
+export function addIncludeDir(value: string) {
+    includeDirs.push(value);
+}
+
+export class Parser<P extends Packages> {
+  private static readonly packageCache = new Map<Packages, Parser<any>>();
+
+  private readonly packageRoot: protobuf.Root;
+
+  private readonly typeCache: Map<PackageTypes<P>, protobuf.Type>;
+
+  static forPackage<T extends Packages>(packageName: T): Parser<T> {
+    if (!Parser.packageCache.has(packageName)) {
+      const parser = new Parser(packageName);
+      Parser.packageCache.set(packageName, parser);
+    }
+    return Parser.packageCache.get(packageName)!;
+  }
+
+  private constructor(private readonly packageName: P) {
+    const files = readdirSync(join(modelsFolder, String(packageName))).map(f =>
+      join(String(packageName), f)
+    );
+    this.packageRoot = loadProtosWithOptionsSync(files, {
+        ...protoLoaderOptions, 
+        includeDirs,
+    });
+    this.typeCache = new Map();
+  }
+
+  private loadType<T extends PackageTypes<P>>(typeName: T): protobuf.Type {
+    if (!this.typeCache.has(typeName)) {
+      const protoType = this.packageRoot.lookupType(
+        `${this.packageName}.${String(typeName)}`
+      );
+      this.typeCache.set(typeName, protoType);
+    }
+    return this.typeCache.get(typeName)!;
+  }
+
+  decode<T extends PackageTypes<P>>(
+    typeName: T,
+    buffer: Buffer
+  ): OutputType<P, T> {
+    const protoType = this.loadType(typeName);
+    return protoType.toObject(
+      protoType.decode(buffer),
+      conversionOptions
+    ) as OutputType<P, T>;
+  }
+
+  encode<T extends PackageTypes<P>>(
+    typeName: T,
+    value: InputType<P, T>
+  ): Buffer {
+    const protoType = this.loadType(typeName);
+    return Buffer.from(
+      protoType.encode(protoType.fromObject(value as object)).finish()
+    );
+  }
+}
