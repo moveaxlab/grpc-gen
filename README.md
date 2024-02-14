@@ -1,5 +1,8 @@
 # gRPC gen
 
+![NPM License](https://img.shields.io/npm/l/%40moveaxlab%2Fgrpc-gen)
+![NPM Version](https://img.shields.io/npm/v/%40moveaxlab%2Fgrpc-gen)
+
 This package contains some opinionated utility functions to generate TypeScript types
 from protobuf files, to interact with gRPC services and protobuf in general.
 
