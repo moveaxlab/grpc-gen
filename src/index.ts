@@ -1,7 +1,14 @@
 #!/usr/bin/env node
 
 import { program } from "commander";
-import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "fs";
+import {
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "fs";
 import { join, parse } from "path";
 import { execSync } from "child_process";
 import { createLogger, format, transports } from "winston";
@@ -84,10 +91,8 @@ if (generateAll) {
   }
 }
 
-
-  logger.debug(`Removing unneded generated files`);
-  execSync(`find ${options.output} -maxdepth 1 -type f -delete`);
-
+logger.debug(`Removing unneded generated files`);
+execSync(`find ${options.output} -maxdepth 1 -type f -delete`);
 
 for (const service of services) {
   const indexFile = join(options.output, service, "index.ts");
@@ -106,7 +111,7 @@ for (const service of services) {
 
 logger.debug(`Creating global index file`);
 rmSync(join(options.output, "index.ts"), { force: true });
-const generatedServices = readdirSync(options.output).filter(dir => {
+const generatedServices = readdirSync(options.output).filter((dir) => {
   return existsSync(`${options.output}/${dir}/index.ts`);
 });
 
@@ -114,12 +119,11 @@ writeFileSync(
   join(options.output, "index.ts"),
   generatedServices.map((s) => `import * as ${s} from './${s}';`).join("\n") +
     "\n\nexport {\n" +
-  generatedServices.map((s) => `  ${s},`).join("\n") +
+    generatedServices.map((s) => `  ${s},`).join("\n") +
     "\n};",
 );
 
 generateRootTypesIndex(options.output, generatedServices);
-
 
 const parserContents = readFileSync(join(__dirname, "Parser.txt"));
 writeFileSync(
