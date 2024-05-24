@@ -1,6 +1,6 @@
 {
   "name": "@moveaxlab/grpc-gen",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "license": "MIT",
   "contributors": [
     "Michelle Laurenti <michelle.laurenti@moveax.it>"
