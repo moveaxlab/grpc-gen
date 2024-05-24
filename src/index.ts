@@ -2,15 +2,16 @@
 
 import { program } from "commander";
 import {
+  existsSync,
   mkdirSync,
-  readFileSync,
   readdirSync,
+  readFileSync,
   rmSync,
   writeFileSync,
 } from "fs";
 import { join, parse } from "path";
 import { execSync } from "child_process";
-import { createLogger, transports, format } from "winston";
+import { createLogger, format, transports } from "winston";
 import { generateTypesIndex } from "./generate_types_index";
 import { generateRootTypesIndex } from "./generate_root_types_index";
 
@@ -32,10 +33,12 @@ const logger = createLogger({
 let services = program.args;
 
 const allServices = readdirSync(options.models);
+let generateAll = false;
 
 if (services.length == 0) {
   logger.info(`No services specified, generating code for all services`);
   services = allServices;
+  generateAll = true;
 }
 
 for (const service of services) {
@@ -56,19 +59,37 @@ for (const service of services) {
   mkdirSync(join(options.output, service));
 }
 
-logger.debug(`Generating typescript code`);
-execSync(`yarn run proto-loader-gen-types \
-  --longs=Long \
-  --defaults=true \
-  --arrays=true \
-  --objects=true \
-  --keepCase=true \
-  --grpcLib=@grpc/grpc-js \
-  --inputTemplate "%s__input" \
-  --outputTemplate "%s" \
-  --includeDirs="${options.models}" \
-  --outDir="${options.output}" \
-  ${options.models}/**/*.proto`);
+if (generateAll) {
+  logger.debug(`Generating typescript code for all services`);
+  execSync(`yarn run proto-loader-gen-types \
+    --longs=Long \
+    --defaults=true \
+    --arrays=true \
+    --objects=true \
+    --keepCase=true \
+    --grpcLib=@grpc/grpc-js \
+    --inputTemplate "%s__input" \
+    --outputTemplate "%s" \
+    --includeDirs="${options.models}" \
+    --outDir="${options.output}" \
+    ${options.models}/**/*.proto`);
+} else {
+  for (const service of services) {
+    logger.debug(`Generating typescript code for ${service} services`);
+    execSync(`yarn run proto-loader-gen-types \
+    --longs=Long \
+    --defaults=true \
+    --arrays=true \
+    --objects=true \
+    --keepCase=true \
+    --grpcLib=@grpc/grpc-js \
+    --inputTemplate "%s__input" \
+    --outputTemplate "%s" \
+    --includeDirs="${options.models}" \
+    --outDir="${options.output}" \
+    ${options.models}/${service}/*.proto`);
+  }
+}
 
 logger.debug(`Removing unneded generated files`);
 execSync(`find ${options.output} -maxdepth 1 -type f -delete`);
@@ -90,15 +111,19 @@ for (const service of services) {
 
 logger.debug(`Creating global index file`);
 rmSync(join(options.output, "index.ts"), { force: true });
+const generatedServices = readdirSync(options.output).filter((dir) => {
+  return existsSync(`${options.output}/${dir}/index.ts`);
+});
+
 writeFileSync(
   join(options.output, "index.ts"),
-  allServices.map((s) => `import * as ${s} from './${s}';`).join("\n") +
+  generatedServices.map((s) => `import * as ${s} from './${s}';`).join("\n") +
     "\n\nexport {\n" +
-    allServices.map((s) => `  ${s},`).join("\n") +
+    generatedServices.map((s) => `  ${s},`).join("\n") +
     "\n};",
 );
 
-generateRootTypesIndex(options.output, allServices);
+generateRootTypesIndex(options.output, generatedServices);
 
 const parserContents = readFileSync(join(__dirname, "Parser.txt"));
 writeFileSync(
