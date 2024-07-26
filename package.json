@@ -1,6 +1,6 @@
 {
   "name": "@moveaxlab/grpc-gen",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "license": "MIT",
   "contributors": [
     "Michelle Laurenti <michelle.laurenti@moveax.it>"
@@ -40,7 +40,7 @@
     "protobufjs": "^7.2.6"
   },
   "dependencies": {
-    "@grpc/grpc-js": "^1.10.0",
+    "@grpc/grpc-js": "^1.10.9",
     "commander": "^12.0.0",
     "grpc_tools_node_protoc_ts": "^5.3.3",
     "typescript": "^5.3.3",
